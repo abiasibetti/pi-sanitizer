@@ -1,0 +1,91 @@
+# base-image for node on any machine using a template variable,
+# see more about dockerfile templates here: http://docs.resin.io/deployment/docker-templates/
+# and about resin base images here: http://docs.resin.io/runtime/resin-base-images/
+# Note the node:slim image doesn't have node-gyp
+FROM resin/raspberrypi3-debian:latest
+
+# Enable systemd init system in container
+ENV INITSYSTEM on
+
+# Defines our working directory in container
+WORKDIR /usr/src/app
+
+# Set the device type environment variable using Dockerfile templates
+ENV DEVICE_TYPE=%%RESIN_MACHINE_NAME%%
+
+# use apt-get if you need to install dependencies,
+# for instance if you need ALSA sound utils, just uncomment the lines below.
+#RUN apt-get update && apt-get install -yq \
+#    alsa-utils libasound2-dev && \
+#    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get upgrade && apt-get dist-upgrade
+
+RUN apt-get install -y \
+  apt-utils \
+  xserver-xorg \
+  xinit \
+  lxde \
+  lxde-core \
+  lxappearance \
+  clang \
+  python \
+  python-tk \
+  xserver-xorg-core \
+  xserver-xorg-input-all \
+  xserver-xorg-video-fbdev \
+  xorg \
+  x11-common \
+  x11-utils \
+  x11-xkb-utils \
+  x11-xserver-utils \
+  xauth \
+  xdg-user-dirs \
+  xfce-keyboard-shortcuts \
+  xfconf \
+  xfonts-100dpi \
+  xfonts-encodings \
+  xfonts-utils \
+  xkb-data \
+  xml-core \
+  xserver-common \
+  xserver-xorg-core \
+  xserver-xorg-input-all \
+  xserver-xorg-input-evdev \
+  xserver-xorg-input-synaptics \
+  xterm \
+  build-essential \
+  libfuzzy-dev \
+  cron
+
+# This will copy all files in our root to the working directory in the container
+COPY . ./
+
+RUN sed -i "2i xset s off" /etc/X11/xinit/xinitrc
+RUN sed -i "3i xset -dpms" /etc/X11/xinit/xinitrc
+RUN sed -i "4i xset s noblank" /etc/X11/xinit/xinitrc
+
+# switch on systemd init system in container
+RUN touch /root/.Xauthority
+ENV DISPLAY 0.0
+RUN export DISPLAY=:0.0
+
+# Enable systemd init system in container
+ENV INITSYSTEM on
+
+# main.py will run when container starts up on the device
+CMD ["startx"]
+
+
+################################################################
+# Copies the package.json first for better cache on later pushes
+#COPY package.json package.json
+
+# This install npm dependencies on the resin.io build server,
+# making sure to clean up the artifacts it creates in order to reduce the image size.
+#RUN JOBS=MAX npm install --production --unsafe-perm && npm cache clean && rm -rf /tmp/*
+
+# This will copy all files in our root to the working  directory in the container
+#COPY . ./
+
+
